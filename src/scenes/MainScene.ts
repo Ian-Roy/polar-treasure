@@ -6,17 +6,23 @@ import { Storage } from '../shared/Storage';
 export class MainScene extends Phaser.Scene {
   private inputMgr!: InputManager;
   private player!: Phaser.Types.Physics.Arcade.SpriteWithDynamicBody;
+  private clickSfx?: Phaser.Sound.BaseSound;
   private speed = 160;
 
   constructor() {
     super('main');
   }
 
-  async create() {
-    // Settings & save data
-    const settings = await Settings.load();
-    const muted = settings?.audio.muted ?? true;
-    this.sound.setMute(muted);
+  create() {
+    // Settings & save data (load async, but don't block setup)
+    Settings.load()
+      .then((settings) => {
+        const muted = settings?.audio.muted ?? true;
+        this.sound.setMute(muted);
+      })
+      .catch(() => {
+        this.sound.setMute(true);
+      });
 
     // Input
     this.inputMgr = new InputManager(this);
@@ -31,6 +37,7 @@ export class MainScene extends Phaser.Scene {
 
     // Player (uses generated sprite "player_dot")
     this.player = this.physics.add.sprite(cx, cy, 'player_dot');
+    this.clickSfx = this.sound.add('click', { volume: 0.6 });
 
     // Camera
     this.cameras.main.startFollow(this.player, true, 0.08, 0.08);
@@ -39,6 +46,9 @@ export class MainScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-M', async () => {
       const newMuted = !this.sound.mute;
       this.sound.setMute(newMuted);
+      if (!newMuted) {
+        this.clickSfx?.play();
+      }
       const s = (await Settings.load()) || Settings.defaults();
       s.audio.muted = newMuted;
       await Settings.save(s);
@@ -50,12 +60,13 @@ export class MainScene extends Phaser.Scene {
       this.addToast('Saved');
     });
 
-    // Load saved position
-    const saved = await Storage.get<{ x: number; y: number }>('player.pos');
-    if (saved) {
-      this.player.setPosition(saved.x, saved.y);
-      this.addToast('Loaded');
-    }
+    // Load saved position without blocking scene start
+    Storage.get<{ x: number; y: number }>('player.pos').then((saved) => {
+      if (saved) {
+        this.player.setPosition(saved.x, saved.y);
+        this.addToast('Loaded');
+      }
+    });
   }
 
   update() {
