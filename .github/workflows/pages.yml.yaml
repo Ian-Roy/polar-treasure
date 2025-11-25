@@ -30,8 +30,8 @@ jobs:
       - name: Install
         run: yarn --frozen-lockfile
 
-      - name: Generate & Build
-        run: yarn build
+      - name: Build
+        run: yarn build:ci
         env:
           REPO_BASE: "/${{ github.event.repository.name }}/"
 

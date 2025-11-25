@@ -30,12 +30,13 @@ Outputs to `dist/`.
 ## Deploy to GitHub Pages
 
 1. Ensure `vite.config.ts` `REPO_BASE` matches your repository name, e.g. `/polar-treasure/`.
-2. Enable Pages in GitHub (Settings → Pages → Deploy from branch: `gh-pages`).
-3. Push to `main`; CI will build and deploy automatically. Or deploy manually:
+2. Enable Pages in GitHub (Settings → Pages → Source: GitHub Actions).
+3. Push to `main`; CI will build and deploy automatically.
 
-```bash
-yarn deploy
-```
+Local-only helpers:
+
+- `yarn gen:assets` regenerates icons/sprite/sfx and updates `assets/manifest.json`.
+- `yarn build:ci` builds without regenerating assets (mirrors CI). Use `yarn build` when you intend to regenerate and commit assets.
 
 ## PWA behavior
 
