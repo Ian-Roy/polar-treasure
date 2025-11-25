@@ -30,7 +30,7 @@ export class MainScene extends Phaser.Scene {
     // Simple world
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
-    this.add.text(16, 12, 'PWA Game Starter\nWASD/Arrows to move\nPress M to mute/unmute', {
+    this.add.text(16, 12, 'Polar Treasure\nWASD/Arrows to move\nPress M to mute/unmute', {
       color: '#ffffff',
       fontSize: '16px'
     });

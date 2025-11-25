@@ -1,7 +1,7 @@
 # polar-treasure
 
 
-# PWA Game Hello (Phaser 3 + TS + Vite + PWA)
+# Polar Treasure (Phaser 3 + TS + Vite + PWA)
 
 Offline-first Phaser 3 starter that deploys to GitHub Pages. Uses vite-plugin-pwa (Workbox GenerateSW) with a user prompt when updates are available.
 
@@ -29,7 +29,7 @@ Outputs to `dist/`.
 
 ## Deploy to GitHub Pages
 
-1. Ensure `vite.config.ts` `REPO_BASE` matches your repository name, e.g. `/pwa-game-hello/`.
+1. Ensure `vite.config.ts` `REPO_BASE` matches your repository name, e.g. `/polar-treasure/`.
 2. Enable Pages in GitHub (Settings → Pages → Deploy from branch: `gh-pages`).
 3. Push to `main`; CI will build and deploy automatically. Or deploy manually:
 

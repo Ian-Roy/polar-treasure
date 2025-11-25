@@ -1,5 +1,5 @@
 {
-  "name": "pwa-game-hello",
+  "name": "polar-treasure",
   "version": "0.1.0",
   "private": true,
   "description": "Starter for Phaser 3 + TypeScript + Vite + PWA (offline forever), deployable to GitHub Pages.",
@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "ts-node --transpile-only tools/gen-assets.ts && vite build",
+    "build": "ts-node --esm --transpile-only tools/gen-assets.ts && vite build",
     "preview": "vite preview --host",
     "deploy": "vite build && gh-pages -d dist -b gh-pages"
   },
