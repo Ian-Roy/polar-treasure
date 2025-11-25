@@ -1,8 +1,16 @@
 {
   "images": [
-    { "key": "player_dot", "url": "assets/img/player_dot.png" }
+    {
+      "key": "player_dot",
+      "url": "assets/img/player_dot.png"
+    }
   ],
   "audio": [
-    { "key": "click", "urls": ["assets/sfx/click.wav"] }
+    {
+      "key": "click",
+      "urls": [
+        "assets/sfx/click.wav"
+      ]
+    }
   ]
 }

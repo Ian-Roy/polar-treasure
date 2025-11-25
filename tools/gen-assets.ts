@@ -1,4 +1,3 @@
---- path: tools/gen-assets.ts
 /**
  * Procedurally generate:
  *  - icons: assets/icons/icon-192.png, icon-512.png (maskable-friendly simple glyph)
