@@ -11,7 +11,8 @@ import { mkdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { PNG } from 'pngjs';
 
-const ASSETS = 'assets';
+// Assets live under public/assets so Vite copies them verbatim to dist/assets
+const ASSETS = 'public/assets';
 const ICONS_DIR = join(ASSETS, 'icons');
 const IMG_DIR = join(ASSETS, 'img');
 const SFX_DIR = join(ASSETS, 'sfx');

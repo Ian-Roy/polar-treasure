@@ -6,8 +6,6 @@ const REPO_BASE = process.env.REPO_BASE || "/polar-treasure/";
 
 export default defineConfig({
   base: REPO_BASE,
-  // Copy pre-generated game assets (icons/sfx/manifest) directly to dist
-  publicDir: "assets",
   plugins: [
     VitePWA({
       registerType: "autoUpdate",
