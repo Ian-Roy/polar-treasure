@@ -35,3 +35,63 @@ html, body, #app {
   font-weight: 600;
   cursor: pointer;
 }
+
+/* Install prompt */
+.install-toast {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 16px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 9999;
+}
+.install-toast__card {
+  pointer-events: auto;
+  background: rgba(20, 24, 40, 0.96);
+  color: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  max-width: 520px;
+  width: calc(100% - 32px);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+}
+.install-toast__text {
+  flex: 1;
+}
+.install-toast__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+.install-toast__subtitle {
+  opacity: 0.85;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+.install-toast__actions {
+  display: flex;
+  gap: 8px;
+}
+.install-toast__btn {
+  background: #2bd4ff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.install-toast__dismiss {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+  white-space: nowrap;
+}

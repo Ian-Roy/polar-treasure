@@ -5,6 +5,7 @@ import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { MainScene } from './scenes/MainScene';
 import { setupPWAUpdatePrompt } from './pwa/ServiceWorkerManager';
+import { setupInstallPrompt } from './pwa/InstallPrompt';
 
 // Register Phaser scenes
 phaserConfig.scene = [BootScene, PreloadScene, MainScene];
@@ -26,3 +27,6 @@ setupPWAUpdatePrompt(() => {
     location.reload();
   });
 });
+
+// PWA: show install prompt UI when supported
+setupInstallPrompt();
