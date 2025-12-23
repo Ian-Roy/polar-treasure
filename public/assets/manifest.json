@@ -3,6 +3,18 @@
     {
       "key": "player_dot",
       "url": "assets/img/player_dot.png"
+    },
+    {
+      "key": "crane_arm",
+      "url": "assets/img/crane-arm.png"
+    }
+  ],
+  "spritesheets": [
+    {
+      "key": "snow_tiles",
+      "url": "assets/img/snow-tiles.png",
+      "frameWidth": 32,
+      "frameHeight": 32
     }
   ],
   "audio": [
