@@ -134,7 +134,11 @@ function main() {
   // Asset manifest used by PreloadScene
   writeJSON(join(ASSETS, 'manifest.json'), {
     images: [
-      { key: 'player_dot', url: 'assets/img/player_dot.png' }
+      { key: 'player_dot', url: 'assets/img/player_dot.png' },
+      { key: 'steel_arm', url: 'assets/img/steel-arm.png' }
+    ],
+    spritesheets: [
+      { key: 'snow_tiles', url: 'assets/img/snow-tiles.png', frameWidth: 32, frameHeight: 32 }
     ],
     audio: [
       { key: 'click', urls: ['assets/sfx/click.wav'] }

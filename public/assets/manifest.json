@@ -5,8 +5,8 @@
       "url": "assets/img/player_dot.png"
     },
     {
-      "key": "crane_arm",
-      "url": "assets/img/crane-arm.png"
+      "key": "steel_arm",
+      "url": "assets/img/steel-arm.png"
     }
   ],
   "spritesheets": [

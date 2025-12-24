@@ -29,17 +29,10 @@ export class MainScene extends Phaser.Scene {
   private maxRadius = 0;
   private radialStep = 84;
   private ringCount = 5;
-  private angleStep = Phaser.Math.DegToRad(15);
 
   private bgGradient!: Phaser.GameObjects.Graphics;
-  private snowBaseMap?: Phaser.Tilemaps.Tilemap;
-  private snowBaseLayer?: Phaser.Tilemaps.TilemapLayer;
-  private snowDecorMap?: Phaser.Tilemaps.Tilemap;
-  private snowDecorLayer?: Phaser.Tilemaps.TilemapLayer;
-  private snowSeed = 0;
-  private snowBaseIndices = [1, 12, 13, 15, 16, 21, 23, 24];
-  private snowForestIndices = [54, 55, 63, 64];
   private grid!: Phaser.GameObjects.Graphics;
+  private gridLabels: Phaser.GameObjects.Text[] = [];
   private targetMarker!: Phaser.GameObjects.Graphics;
   private excavations: ExcavationRecord[] = [];
   private excavationId = 0;
@@ -54,8 +47,6 @@ export class MainScene extends Phaser.Scene {
 
   create() {
     this.bgGradient = this.add.graphics().setDepth(0);
-    this.snowSeed = Math.floor(Math.random() * 1000000);
-
     this.grid = this.add.graphics().setDepth(2);
     this.targetMarker = this.add.graphics().setDepth(3);
 
@@ -93,12 +84,8 @@ export class MainScene extends Phaser.Scene {
     this.origin.set(margin + this.maxRadius, height * 0.5);
 
     this.bgGradient.clear();
-    this.bgGradient.fillGradientStyle(0xd9f1ff, 0xc6e5f7, 0xf4fbff, 0xd4edf9, 1);
+    this.bgGradient.fillStyle(0xffffff, 1);
     this.bgGradient.fillRect(0, 0, width, height);
-    const gridBoxSize = this.maxRadius * 2;
-    const gridLeft = this.origin.x - this.maxRadius;
-    const gridTop = this.origin.y - this.maxRadius;
-    this.buildSnowfield(gridLeft, gridTop, gridBoxSize, gridBoxSize);
 
     this.renderInfoPanel(panelX, panelWidth, height, margin);
     this.drawGrid();
@@ -107,12 +94,36 @@ export class MainScene extends Phaser.Scene {
 
   private drawGrid() {
     this.grid.clear();
+    this.clearGridLabels();
 
     if (this.maxRadius <= 0) {
       return;
     }
 
-    this.grid.lineStyle(2, 0x5a6a73, 0.55);
+    const ringColors = [0x4a6b8a, 0x5d88a8, 0x74a1c2, 0x8db7d6, 0xa5cce6];
+    for (let ring = 1; ring <= this.ringCount; ring += 1) {
+      const radius = ring * this.radialStep;
+      const color = ringColors[(ring - 1) % ringColors.length];
+      this.grid.lineStyle(2, color, 0.8);
+      this.grid.beginPath();
+      this.grid.arc(this.origin.x, this.origin.y, radius, 0, Math.PI * 2, false);
+      this.grid.strokePath();
+
+      const labelOffset = Math.max(8, this.radialStep * 0.12);
+      const fontSize = Math.max(12, Math.min(20, Math.round(this.radialStep * 0.28)));
+      const label = this.add
+        .text(this.origin.x + radius + labelOffset, this.origin.y, `${ring}`, {
+          color: '#1f2b33',
+          fontSize: `${fontSize}px`,
+          fontFamily: 'Trebuchet MS'
+        })
+        .setOrigin(0, 0.5)
+        .setDepth(3);
+      this.gridLabels.push(label);
+    }
+
+    const axisColor = 0x1f2b33;
+    this.grid.lineStyle(2, axisColor, 0.6);
     this.grid.beginPath();
     this.grid.moveTo(this.origin.x - this.maxRadius, this.origin.y);
     this.grid.lineTo(this.origin.x + this.maxRadius, this.origin.y);
@@ -123,73 +134,33 @@ export class MainScene extends Phaser.Scene {
     this.grid.lineTo(this.origin.x, this.origin.y + this.maxRadius);
     this.grid.strokePath();
 
-    this.grid.lineStyle(1, 0x5a6a73, 0.28);
-    for (let r = this.radialStep; r <= this.maxRadius; r += this.radialStep) {
-      this.grid.beginPath();
-      this.grid.arc(this.origin.x, this.origin.y, r, 0, Math.PI * 2, false);
-      this.grid.strokePath();
-    }
-
-    for (let a = 0; a < Math.PI * 2 - 0.0001; a += this.angleStep) {
-      const endX = this.origin.x + this.maxRadius * Math.cos(a);
-      const endY = this.origin.y - this.maxRadius * Math.sin(a);
+    const majorAngles = [
+      0,
+      Math.PI / 4,
+      Math.PI / 2,
+      (3 * Math.PI) / 4,
+      Math.PI,
+      (5 * Math.PI) / 4,
+      (3 * Math.PI) / 2,
+      (7 * Math.PI) / 4
+    ];
+    this.grid.lineStyle(1, axisColor, 0.35);
+    for (const angle of majorAngles) {
+      const endX = this.origin.x + this.maxRadius * Math.cos(angle);
+      const endY = this.origin.y - this.maxRadius * Math.sin(angle);
       this.grid.beginPath();
       this.grid.moveTo(this.origin.x, this.origin.y);
       this.grid.lineTo(endX, endY);
       this.grid.strokePath();
     }
+
+    this.grid.fillStyle(axisColor, 0.7);
+    this.grid.fillCircle(this.origin.x, this.origin.y, Math.max(2, this.radialStep * 0.05));
   }
 
-  private buildSnowfield(left: number, top: number, width: number, height: number) {
-    this.snowBaseLayer?.destroy();
-    this.snowBaseMap?.destroy();
-    this.snowDecorLayer?.destroy();
-    this.snowDecorMap?.destroy();
-
-    const tileSize = 32;
-    const cols = Math.max(1, Math.ceil(width / tileSize));
-    const rows = Math.max(1, Math.ceil(height / tileSize));
-    const rng = new Phaser.Math.RandomDataGenerator([`${this.snowSeed}`]);
-    const forestChance = 0.06;
-
-    const baseData: number[][] = [];
-    const decorData: number[][] = [];
-    for (let y = 0; y < rows; y += 1) {
-      const baseRow: number[] = [];
-      const decorRow: number[] = [];
-      for (let x = 0; x < cols; x += 1) {
-        baseRow.push(rng.pick(this.snowBaseIndices));
-        if (rng.frac() < forestChance) {
-          decorRow.push(rng.pick(this.snowForestIndices));
-        } else {
-          decorRow.push(-1);
-        }
-      }
-      baseData.push(baseRow);
-      decorData.push(decorRow);
-    }
-
-    const baseMap = this.make.tilemap({ data: baseData, tileWidth: tileSize, tileHeight: tileSize });
-    const baseTileset = baseMap.addTilesetImage('snow_tiles', 'snow_tiles', tileSize, tileSize, 0, 0);
-    if (!baseTileset) {
-      return;
-    }
-    const baseLayer = baseMap.createLayer(0, baseTileset, left, top);
-    baseLayer.setDepth(1);
-    baseLayer.setAlpha(0.9);
-
-    const decorMap = this.make.tilemap({ data: decorData, tileWidth: tileSize, tileHeight: tileSize });
-    const decorTileset = decorMap.addTilesetImage('snow_tiles', 'snow_tiles', tileSize, tileSize, 0, 0);
-    if (decorTileset) {
-      const decorLayer = decorMap.createLayer(0, decorTileset, left, top);
-      decorLayer.setDepth(1.4);
-      decorLayer.setAlpha(0.95);
-      this.snowDecorLayer = decorLayer;
-      this.snowDecorMap = decorMap;
-    }
-
-    this.snowBaseMap = baseMap;
-    this.snowBaseLayer = baseLayer;
+  private clearGridLabels() {
+    this.gridLabels.forEach((label) => label.destroy());
+    this.gridLabels = [];
   }
 
   private renderInfoPanel(panelX: number, panelWidth: number, height: number, margin: number) {
@@ -256,37 +227,65 @@ export class MainScene extends Phaser.Scene {
   }
 
   private excavateAt(cell: PolarCell) {
-    const craneScale = Phaser.Math.Clamp(this.radialStep / 140, 0.35, 0.65);
-    const crane = this.add.sprite(cell.x, 0, 'crane_arm');
-    crane.setScale(craneScale);
-    crane.setOrigin(0.91, 0.62);
-    crane.setDepth(8);
-
-    const startY = -crane.displayHeight;
-    crane.setPosition(cell.x, startY);
-
     this.digSfx?.play();
+    this.animateCraneArm(cell);
+  }
 
+  private animateCraneArm(cell: PolarCell) {
+    if (this.maxRadius <= 0) {
+      return;
+    }
+
+    const arm = this.add.sprite(this.origin.x, this.origin.y, 'steel_arm');
+    arm.setOrigin(0, 0.5);
+    arm.setDepth(8);
+
+    const baseWidth = arm.width;
+    const baseHeight = arm.height;
+    const thickness = Phaser.Math.Clamp(this.radialStep * 0.08, 4, 12);
+    const scaleY = thickness / baseHeight;
+
+    const startRatio = 1 / this.ringCount;
+    const startLength = startRatio * this.maxRadius;
+    const targetLength = cell.radiusRatio * this.maxRadius;
+
+    const startScaleX = startLength / baseWidth;
+    const targetScaleX = targetLength / baseWidth;
+
+    arm.setRotation(0);
+    arm.setScale(startScaleX, scaleY);
+
+    const expandDuration = 180 + 280 * Math.min(1, Math.abs(targetScaleX - startScaleX));
     this.tweens.add({
-      targets: crane,
-      y: cell.y,
-      duration: 320,
+      targets: arm,
+      scaleX: targetScaleX,
+      duration: expandDuration,
       ease: 'Cubic.easeOut',
       onComplete: () => {
-        this.addExcavationMark(cell, crane.displayWidth * 0.18, crane.displayHeight * 0.14);
+        const rotationDuration = 220 + 700 * (cell.angle / (Math.PI * 2));
         this.tweens.add({
-          targets: crane,
-          y: startY,
-          duration: 260,
+          targets: arm,
+          rotation: -cell.angle,
+          duration: rotationDuration,
           ease: 'Cubic.easeIn',
-          delay: 140,
-          onComplete: () => crane.destroy()
+          onComplete: () => {
+            this.addExcavationMark(cell);
+            this.tweens.add({
+              targets: arm,
+              alpha: 0,
+              duration: 180,
+              ease: 'Quad.easeOut',
+              onComplete: () => arm.destroy()
+            });
+          }
         });
       }
     });
   }
 
-  private addExcavationMark(cell: PolarCell, width: number, height: number) {
+  private addExcavationMark(cell: PolarCell) {
+    const width = Phaser.Math.Clamp(this.radialStep * 0.32, 8, 24);
+    const height = Phaser.Math.Clamp(this.radialStep * 0.22, 6, 18);
     const mark = this.add.ellipse(cell.x, cell.y, width, height, 0x93a9b8, 0.6);
     mark.setStrokeStyle(2, 0x5d6d79, 0.7);
     mark.setDepth(2.6);
