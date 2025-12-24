@@ -3,14 +3,32 @@ import Phaser from 'phaser';
 type PolarCell = {
   angle: number;
   radius: number;
+  radiusRatio: number;
   x: number;
   y: number;
+};
+
+type ExcavationRecord = {
+  id: number;
+  angle: number;
+  radius: number;
+  radiusRatio: number;
+  marker: Phaser.GameObjects.Ellipse;
+};
+
+type InfoPanelLayout = {
+  x: number;
+  width: number;
+  height: number;
+  padding: number;
+  margin: number;
 };
 
 export class MainScene extends Phaser.Scene {
   private origin = new Phaser.Math.Vector2();
   private maxRadius = 0;
   private radialStep = 84;
+  private ringCount = 5;
   private angleStep = Phaser.Math.DegToRad(15);
 
   private bgGradient!: Phaser.GameObjects.Graphics;
@@ -23,9 +41,11 @@ export class MainScene extends Phaser.Scene {
   private snowForestIndices = [54, 55, 63, 64];
   private grid!: Phaser.GameObjects.Graphics;
   private targetMarker!: Phaser.GameObjects.Graphics;
-  private excavations: Phaser.GameObjects.Ellipse[] = [];
+  private excavations: ExcavationRecord[] = [];
+  private excavationId = 0;
   private infoPanel!: Phaser.GameObjects.Graphics;
   private infoText!: Phaser.GameObjects.Text;
+  private panelLayout: InfoPanelLayout = { x: 0, width: 0, height: 0, padding: 0, margin: 0 };
   private digSfx?: Phaser.Sound.BaseSound;
 
   constructor() {
@@ -69,7 +89,7 @@ export class MainScene extends Phaser.Scene {
     const maxRadiusByWidth = Math.max(0, (panelX - gridGap - margin) / 2);
     const maxRadiusByHeight = Math.max(0, height * 0.5 - margin);
     this.maxRadius = Math.min(maxRadiusByWidth, maxRadiusByHeight);
-    this.radialStep = this.maxRadius / 5;
+    this.radialStep = this.maxRadius / this.ringCount;
     this.origin.set(margin + this.maxRadius, height * 0.5);
 
     this.bgGradient.clear();
@@ -82,6 +102,7 @@ export class MainScene extends Phaser.Scene {
 
     this.renderInfoPanel(panelX, panelWidth, height, margin);
     this.drawGrid();
+    this.updateExcavationMarkers();
   }
 
   private drawGrid() {
@@ -173,15 +194,7 @@ export class MainScene extends Phaser.Scene {
 
   private renderInfoPanel(panelX: number, panelWidth: number, height: number, margin: number) {
     const panelPadding = Math.max(14, panelWidth * 0.12);
-    const text = [
-      'ICE OPS',
-      'Score: 1240',
-      'Shots: 03',
-      'Targets: 12',
-      'Wind: 4 kt',
-      'Temp: -26 C',
-      'Range: 360 m'
-    ].join('\\n');
+    this.panelLayout = { x: panelX, width: panelWidth, height, padding: panelPadding, margin };
 
     this.infoPanel.clear();
     this.infoPanel.fillStyle(0xf2f7fb, 0.94);
@@ -189,9 +202,7 @@ export class MainScene extends Phaser.Scene {
     this.infoPanel.lineStyle(2, 0x0b1114, 0.7);
     this.infoPanel.strokeRect(panelX + 1, 1, panelWidth - 2, height - 2);
 
-    this.infoText.setText(text);
-    this.infoText.setPosition(panelX + panelPadding, margin * 0.6);
-    this.infoText.setWordWrapWidth(panelWidth - panelPadding * 2);
+    this.updateInfoText();
   }
 
   private handlePointer(pointer: Phaser.Input.Pointer) {
@@ -215,6 +226,10 @@ export class MainScene extends Phaser.Scene {
   }
 
   private pickCell(pointer: Phaser.Input.Pointer): PolarCell | null {
+    if (this.maxRadius <= 0) {
+      return null;
+    }
+
     const dx = pointer.worldX - this.origin.x;
     const dy = this.origin.y - pointer.worldY;
 
@@ -227,7 +242,8 @@ export class MainScene extends Phaser.Scene {
     if (angle < 0) {
       angle += Math.PI * 2;
     }
-    return { angle, radius, x: pointer.worldX, y: pointer.worldY };
+    const radiusRatio = Phaser.Math.Clamp(radius / this.maxRadius, 0, 1);
+    return { angle, radius, radiusRatio, x: pointer.worldX, y: pointer.worldY };
   }
 
   private renderTarget(cell: PolarCell) {
@@ -257,7 +273,7 @@ export class MainScene extends Phaser.Scene {
       duration: 320,
       ease: 'Cubic.easeOut',
       onComplete: () => {
-        this.addExcavationMark(cell.x, cell.y, crane.displayWidth * 0.18, crane.displayHeight * 0.14);
+        this.addExcavationMark(cell, crane.displayWidth * 0.18, crane.displayHeight * 0.14);
         this.tweens.add({
           targets: crane,
           y: startY,
@@ -270,10 +286,64 @@ export class MainScene extends Phaser.Scene {
     });
   }
 
-  private addExcavationMark(x: number, y: number, width: number, height: number) {
-    const mark = this.add.ellipse(x, y, width, height, 0x93a9b8, 0.6);
+  private addExcavationMark(cell: PolarCell, width: number, height: number) {
+    const mark = this.add.ellipse(cell.x, cell.y, width, height, 0x93a9b8, 0.6);
     mark.setStrokeStyle(2, 0x5d6d79, 0.7);
     mark.setDepth(2.6);
-    this.excavations.push(mark);
+    this.excavationId += 1;
+    const radius = cell.radiusRatio * this.ringCount;
+    this.excavations.push({
+      id: this.excavationId,
+      angle: cell.angle,
+      radius,
+      radiusRatio: cell.radiusRatio,
+      marker: mark
+    });
+    this.updateInfoText();
+  }
+
+  private updateExcavationMarkers() {
+    if (this.maxRadius <= 0) {
+      return;
+    }
+
+    for (const excavation of this.excavations) {
+      const { x, y } = this.polarToWorld(excavation.angle, excavation.radiusRatio);
+      excavation.marker.setPosition(x, y);
+    }
+  }
+
+  private polarToWorld(angle: number, radiusRatio: number) {
+    const radius = radiusRatio * this.maxRadius;
+    return {
+      x: this.origin.x + radius * Math.cos(angle),
+      y: this.origin.y - radius * Math.sin(angle)
+    };
+  }
+
+  private updateInfoText() {
+    const lines: string[] = ['Excavations (r in rings, theta in rad)'];
+
+    if (this.excavations.length === 0) {
+      lines.push('No digs yet.');
+      lines.push('Click inside the grid to record r/theta.');
+    } else {
+      lines.push('');
+      this.excavations.forEach((excavation, index) => {
+        const theta = excavation.angle;
+        const label = String(index + 1).padStart(2, '0');
+        lines.push(
+          `${label} r=${this.formatNumber(excavation.radius, 2)}, theta=${this.formatNumber(theta, 3)}rad`
+        );
+      });
+    }
+
+    this.infoText.setText(lines.join('\\n'));
+    this.infoText.setPosition(this.panelLayout.x + this.panelLayout.padding, this.panelLayout.margin * 0.6);
+    this.infoText.setWordWrapWidth(this.panelLayout.width - this.panelLayout.padding * 2);
+  }
+
+  private formatNumber(value: number, digits: number) {
+    return value.toFixed(digits);
   }
 }
